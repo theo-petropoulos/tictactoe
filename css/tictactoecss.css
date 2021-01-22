@@ -1,0 +1,24 @@
+table {
+  border-collapse: collapse;
+}
+
+tr {
+  border-bottom: 2px solid black;
+}
+
+tr:nth-of-type(3) {
+  border: none;
+}
+
+td {
+  border-right: 2px solid black;
+}
+
+td:nth-of-type(3) {
+  border-right: none;
+}
+
+table form {
+  margin: 0;
+}
+/*# sourceMappingURL=tictactoecss.css.map */
