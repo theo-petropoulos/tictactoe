@@ -1,9 +1,11 @@
 <?php
-    class gameCase{
+    require_once('functions.php');
+
+    class gameBox{
         public $state='unplayed';
         public $value='-';
 
-        public function playCase(){
+        public function playBox(){
             $this->state='played';
         }
 
@@ -18,6 +20,20 @@
 
         public function getValue(){
             return $this->value;
+        }
+    }
+
+    class AI{
+        public $memory;
+        public $board;
+
+        public function __construct($memory, $board){
+            $this->memory=$memory;
+            $this->board=$board;
+        }
+        
+        public function playBox(){
+
         }
     }
 ?>

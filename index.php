@@ -5,23 +5,51 @@
 	session_start();
 	$page= $_SERVER['PHP_SELF'];
 
+	//Si l'utilisateur veut réinitialiser le plateau
 	if(isset($_POST['reset']) && $_POST['reset']==1){
 		session_destroy();
 		header("Refresh: 0; url=$page");
 	}
 
+	//Si l'utilisateur veut commencer une nouvelle partie
 	if(isset($_POST['new_game']) && $_POST['new_game']==1){
+		//On initialise une variable "ingame"
 		$_SESSION['ingame']=1;
+		//On initialise le compteur de coups à 0
 		$_SESSION['play_count']=0;
+		//On génère les cases du morpion en session
 		for($i=0;$i<9;$i++){
-			$_SESSION['case'][$i]= new gameCase();
+			$_SESSION['box'][$i]= new gameBox();
 		}
+		//On récupère la "mémoire" de l'IA et on créé l'IA
+		$memory=file_get_contents('allGameRecords.ndjson');
+		$_SESSION['AI']=new AI($memory, $_SESSION['box']);
 	}
 
-	if(isset($_POST['select_case']) && in_array($_POST['select_case'],range(0,8))){
-		play_move($_SESSION['case'][$_POST['select_case']], $_SESSION['play_count']);
-		$_SESSION['play_count']++;
-		verify_game($_SESSION['case']);
+	//Si l'utilisateur choisit une case
+	if(isset($_POST['select_box']) && in_array($_POST['select_box'],range(0,8))){
+		//On joue le coup de l'utilisateur
+		play_move($_SESSION['box'][$_POST['select_box']], $_SESSION['play_count']);
+		//On initialise la string à rentrer en mémoire de l'IA
+		$str='[';
+		//On parcourt les cases pour récupérer leur état à l'instant T
+		for($i=0;$i<9;$i++){
+			$str.=$_SESSION['box'][$i]->getValue();
+		}
+		//On ferme la string à rentrer en mémoire, et on l'ajoute à un fichier temporaire
+		$str.=']' . PHP_EOL;
+		file_put_contents('currGameRecord.ndjson', $str, FILE_APPEND);
+		$game_record=file_get_contents('currGameRecord.ndjson');
+
+		//On vérifie l'état de la partie
+		//Si la partie est terminée, on initialise la variable "endgame"
+		//On créé une variable reprenant le fichier temporaire à insérer dans la mémoire de l'IA
+		//On insère cette variable dans la mémoire
+		if(verify_game($_SESSION['box'], $game_record, $_SESSION['play_count'])){
+			$_SESSION['endgame']=1;
+			file_put_contents('allGameRecords.ndjson', $game_record, FILE_APPEND);
+			file_put_contents('currGameRecord.ndjson', '');
+		}
 	}
 
 ?>
@@ -57,13 +85,16 @@
 							<?php for($j;$j<3*($i+1);$j++){
 								?><td>
 									<form action="index.php" method="post">
-										<input type="hidden" name="select_case" value="<?php echo $j;?>">
-										<input type="hidden" name="case_value" 
-										value="<?php echo $_SESSION['case'][$j]->getValue();?>">
+										<input type="hidden" name="select_box" value="<?php echo $j;?>">
+										<input type="hidden" name="box_value" 
+										value="<?php echo $_SESSION['box'][$j]->getValue();?>">
 										<input type="submit" 
-										value="<?php echo $_SESSION['case'][$j]->getValue();?>"
+										value="<?php echo $_SESSION['box'][$j]->getValue();?>"
 										<?php
-										if($_SESSION['case'][$j]->getState()=='played'){
+										if(
+											$_SESSION['box'][$j]->getState()=='played' || 
+											(isset($_SESSION['endgame']) && $_SESSION['endgame']==1)
+										){
 											?> disabled <?php
 										} ?>
 										>
